@@ -5,13 +5,20 @@ import org.springframework.stereotype.Repository;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
 
 @Repository
 public class TripRepository {
     private final Map<String, Trip> database = new ConcurrentHashMap<>();
 
     public List<Trip> findAll() {
-        return new ArrayList<>(database.values());
+        return database.values().stream()
+                .sorted((a, b) -> {
+                    String timeA = a.getCreatedAt() != null ? a.getCreatedAt() : "";
+                    String timeB = b.getCreatedAt() != null ? b.getCreatedAt() : "";
+                    return timeB.compareTo(timeA);
+                })
+                .collect(Collectors.toList());
     }
 
     public Optional<Trip> findById(String id) {

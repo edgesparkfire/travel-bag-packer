@@ -14,5 +14,6 @@ public class Item {
     private String itemName;
     private Integer quantity;
     private Boolean isPacked;
-    private String category;
+    private String category; // "Clothing", "Essentials", "Weather Gear", "Transport Gear", "City Survival"
+    private String reason;   // Context explanation for packing this item
 }
