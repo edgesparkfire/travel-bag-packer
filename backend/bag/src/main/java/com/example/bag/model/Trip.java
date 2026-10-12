@@ -15,10 +15,11 @@ import java.util.List;
 @Builder
 public class Trip {
     private String id;
+    private String originCountry;
     private String originCity;
     private String destinationCountry;
     private String destinationCity;
-    private String destination; // Combined e.g. "Hyderabad, India"
+    private String destination; // Combined e.g. "Hyderabad, India" or "Hyderabad, Pakistan"
     private LocalDate startDate;
     private LocalDate endDate;
     private Integer durationDays;

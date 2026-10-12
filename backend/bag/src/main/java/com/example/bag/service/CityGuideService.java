@@ -20,6 +20,30 @@ public class CityGuideService {
         }
 
         String normalized = cityQuery.trim().toLowerCase();
+
+        // 1. Check for Pakistan cities
+        if (normalized.contains("pakistan")) {
+            if (normalized.contains("hyderabad") && cityDatabase.containsKey("hyderabad_pakistan")) {
+                return cityDatabase.get("hyderabad_pakistan");
+            }
+            if (normalized.contains("karachi") && cityDatabase.containsKey("karachi")) {
+                return cityDatabase.get("karachi");
+            }
+            if (normalized.contains("lahore") && cityDatabase.containsKey("lahore")) {
+                return cityDatabase.get("lahore");
+            }
+        }
+
+        // 2. Check for Hyderabad specifically
+        if (normalized.contains("hyderabad")) {
+            if (normalized.contains("pakistan")) {
+                return cityDatabase.get("hyderabad_pakistan");
+            } else {
+                return cityDatabase.get("hyderabad_india");
+            }
+        }
+
+        // 3. Key search
         for (Map.Entry<String, CityGuide> entry : cityDatabase.entrySet()) {
             if (normalized.contains(entry.getKey()) || entry.getKey().contains(normalized)) {
                 return entry.getValue();
@@ -46,10 +70,10 @@ public class CityGuideService {
         hydPhrases.put("Less spicy please", "Karam thakkuva veyandi (Telugu) / Mirchi kam (Hindi)");
         hydPhrases.put("Do you speak English?", "Meeku English vachha? (Telugu) / English aati hai?");
 
-        cityDatabase.put("hyderabad", CityGuide.builder()
+        CityGuide hydIndia = CityGuide.builder()
                 .city("Hyderabad")
                 .country("India")
-                .generalSummary("The historic City of Pearls and major tech metropolis, renowned for Nizami heritage, majestic Golconda Fort, and world-famous Hyderabadi Biryani.")
+                .generalSummary("The historic City of Pearls and major tech metropolis in Telangana, renowned for Nizami heritage, majestic Golconda Fort, and world-famous Hyderabadi Biryani.")
                 .knowledgeSource("Telangana State Tourism Development Corp (TSTDC) & Cyberabad Police Directorate")
                 .bestTimeToVisit("October to March (pleasant 18C-28C; avoid peak summer April-May 42C)")
                 .voltageAndSocket("230V, 50Hz. Socket types C, D, and M (3 round pins). Universal adapter recommended.")
@@ -75,7 +99,109 @@ public class CityGuideService {
                         "Hyderabadi Haleem (slow-cooked wheat, meat, lentils & spices)",
                         "Mirchi ka Salan & Double ka Meetha (royal saffron bread pudding)"
                 ))
-                .build());
+                .build();
+        cityDatabase.put("hyderabad_india", hydIndia);
+        cityDatabase.put("hyderabad", hydIndia);
+
+        // HYDERABAD, SINDH, PAKISTAN
+        Map<String, String> hydPakEmergency = new LinkedHashMap<>();
+        hydPakEmergency.put("Police Emergency (Madadgar)", "15");
+        hydPakEmergency.put("Edhi Ambulance Service", "115");
+        hydPakEmergency.put("Rescue 1122 (Medical & Fire)", "1122");
+        hydPakEmergency.put("Chhipa Emergency Ambulance", "1020");
+        hydPakEmergency.put("Tourist Police / STDC Info", "+92 21 99206337");
+
+        Map<String, String> hydPakPhrases = new LinkedHashMap<>();
+        hydPakPhrases.put("Hello / Greetings", "As-salamu alaykum (Urdu) / Kiyan ahyo? (Sindhi)");
+        hydPakPhrases.put("Thank you", "Shukriya (Urdu) / Meherbani (Sindhi)");
+        hydPakPhrases.put("How much is this?", "Yeh kitne ka hai? (Urdu) / Heh ketre jo aahe? (Sindhi)");
+        hydPakPhrases.put("Where is the station?", "Station kahan hai? (Urdu) / Station kithey aahe? (Sindhi)");
+        hydPakPhrases.put("Less spicy please", "Mirchi kam rakhein (Urdu)");
+        hydPakPhrases.put("Do you speak English?", "Aap English boltay hain?");
+
+        CityGuide hydPak = CityGuide.builder()
+                .city("Hyderabad")
+                .country("Pakistan")
+                .generalSummary("The historic second-largest city in Sindh, Pakistan, historic capital of the Kalhora and Talpur dynasties, famed for Pacco Qillo (Pakka Qila), the Sindh Museum, hand-crafted lacquerware (Jandi), and Resham Gali bazaars.")
+                .knowledgeSource("Sindh Tourism Development Corporation (STDC) & Government of Sindh")
+                .bestTimeToVisit("November to February (pleasant dry winter 14C-26C; avoid severe summer April-June above 42C)")
+                .voltageAndSocket("230V, 50Hz. Socket types C and D (round 2-pin and 3-pin). Universal adapter recommended.")
+                .emergencyContacts(hydPakEmergency)
+                .transportAdvice(Arrays.asList(
+                        "Auto-rickshaws are the primary city transit across Latifabad, Qasimabad, and the old city center. Indrive and Careem provide digital fixed pricing.",
+                        "Hyderabad Junction (HDR) is a major Pakistan Railways stop on the main line connecting to Karachi (2 hours via Tezgam, Green Line, Karakoram Express) and Lahore.",
+                        "M-9 Karachi-Hyderabad Motorway: Reliable 2.5-hour AC bus coaches (Daewoo Express, Faisal Movers) connect Hyderabad directly with Karachi Jinnah International Airport (KHI)."
+                ))
+                .rideApps(Arrays.asList("Careem", "Indrive", "Yango", "Uber"))
+                .culturalEtiquette(Arrays.asList(
+                        "Modest Dress: Wear conservative clothing covering shoulders and legs (Shalwar Kameez or loose shirts and trousers) across bazaars, heritage landmarks, and religious shrines.",
+                        "Shrine & Mosque Etiquette: Always remove shoes before entering shrines (e.g. Shrine of Shah Abdul Latif Bhittai in nearby Bhit Shah) or mosques. Women should carry a dupatta/scarf to cover hair.",
+                        "Hospitality & Dining: Sindhi hospitality is warm. Gratefully accept offered chai (tea). Always eat and exchange money with the right hand.",
+                        "Photography: Always ask permission before photographing people in traditional bazaars or religious shrines."
+                ))
+                .tapWaterStatus("Strictly drink sealed bottled mineral water (Nestle Pure Life, Aquafina) with unbroken tamper seal. Avoid raw tap water and street crushed-ice drinks.")
+                .tippingCulture("5% to 10% is customary at sit-down family restaurants. Rounding up rickshaw fares by 30-50 PKR is appreciated.")
+                .commonPhrases(hydPakPhrases)
+                .mustTryDishes(Arrays.asList(
+                        "Sindhi Biryani (fragrant spiced rice with potatoes and marinated meat)",
+                        "Bombay Bakery Famous Coffee Cake & Macaroons (iconic Hyderabad landmark bakery since 1911)",
+                        "Rabri & Kulfi Falooda from Shahi Bazaar",
+                        "Sindhi Sai Bhaji & Koki"
+                ))
+                .build();
+        cityDatabase.put("hyderabad_pakistan", hydPak);
+
+        // KARACHI, PAKISTAN
+        CityGuide karachi = CityGuide.builder()
+                .city("Karachi")
+                .country("Pakistan")
+                .generalSummary("Pakistan's premier coastal metropolis and economic powerhouse on the Arabian Sea, famed for vibrant beaches, Port Grand, Burns Road food street, and Mohatta Palace.")
+                .knowledgeSource("Sindh Tourism & Karachi Tourism Authority")
+                .bestTimeToVisit("November to February (pleasant coastal weather 18C-28C)")
+                .voltageAndSocket("230V, 50Hz. Socket types C and D.")
+                .emergencyContacts(hydPakEmergency)
+                .transportAdvice(Arrays.asList(
+                        "Use Careem, Indrive, or Uber for safe, air-conditioned point-to-point transit across Clifton, DHA, and Saddar.",
+                        "Red Line Peoples Bus Service provides modern AC public transport across major city arteries.",
+                        "Jinnah International Airport (KHI) is approximately 30-45 minutes from downtown via Shahrah-e-Faisal."
+                ))
+                .rideApps(Arrays.asList("Careem", "Indrive", "Uber", "Yango"))
+                .culturalEtiquette(Arrays.asList(
+                        "Cosmopolitan city with modest clothing recommended for markets, mosques, and heritage quarters.",
+                        "Burns Road is the world-renowned center for Karachi street cuisine; late-night dining until 2 AM is customary."
+                ))
+                .tapWaterStatus("Drink only sealed bottled mineral water.")
+                .tippingCulture("5-10% at sit-down restaurants.")
+                .commonPhrases(hydPakPhrases)
+                .mustTryDishes(Arrays.asList("Burns Road Nihari & Haleem", "Karachi Biryani", "Behari Kabab", "Gola Ganda shaved ice"))
+                .build();
+        cityDatabase.put("karachi", karachi);
+
+        // LAHORE, PAKISTAN
+        CityGuide lahore = CityGuide.builder()
+                .city("Lahore")
+                .country("Pakistan")
+                .generalSummary("The cultural heart of Pakistan, famed for monumental Mughal architecture (Badshahi Mosque, Lahore Fort, Shalimar Gardens) and historic food streets.")
+                .knowledgeSource("Walled City of Lahore Authority (WCLA) & Punjab Tourism")
+                .bestTimeToVisit("November to February (cool winter days 12C-22C)")
+                .voltageAndSocket("230V, 50Hz. Type C and D.")
+                .emergencyContacts(hydPakEmergency)
+                .transportAdvice(Arrays.asList(
+                        "Lahore Metro (Orange Line) is Pakistan's first automated rapid transit system.",
+                        "Metrobus runs dedicated north-south corridors connecting Shahdara to Gajjumata.",
+                        "Ride-hailing via Careem, Indrive, or Uber is widely available."
+                ))
+                .rideApps(Arrays.asList("Careem", "Indrive", "Uber", "Yango"))
+                .culturalEtiquette(Arrays.asList(
+                        "Dress modestly covering shoulders and knees; women should carry scarves for Badshahi Mosque and shrines.",
+                        "Remove footwear before stepping onto mosque and shrine courtyards."
+                ))
+                .tapWaterStatus("Drink only sealed bottled mineral water.")
+                .tippingCulture("5-10% is standard in restaurants.")
+                .commonPhrases(hydPakPhrases)
+                .mustTryDishes(Arrays.asList("Lahori Chargha", "Butt Karahi at Lakshmi Chowk", "Halwa Puri breakfast", "Falooda from Anarkali"))
+                .build();
+        cityDatabase.put("lahore", lahore);
 
         // TOKYO, JAPAN
         Map<String, String> tokyoEmergency = new LinkedHashMap<>();
@@ -200,62 +326,60 @@ public class CityGuideService {
         cityDatabase.put("new york", CityGuide.builder()
                 .city("New York City")
                 .country("United States")
-                .generalSummary("The premier global metropolis with soaring skyline, Broadway theater, Central Park, and non-stop energy.")
-                .knowledgeSource("NYC Tourism + Conventions & Metropolitan Transportation Authority (MTA)")
-                .bestTimeToVisit("September-November (crisp autumn) or May-June (spring bloom)")
-                .voltageAndSocket("120V, 60Hz. Type A and B plugs (two flat pins).")
+                .generalSummary("The dynamic city that never sleeps, famous for Broadway, Central Park, skyscrapers, and vibrant distinct boroughs.")
+                .knowledgeSource("NYC Tourism + Conventions & MTA Transit")
+                .bestTimeToVisit("April to June or September to November (mild weather)")
+                .voltageAndSocket("120V, 60Hz. Plug types A and B (two flat pins).")
                 .emergencyContacts(nycEmergency)
                 .transportAdvice(Arrays.asList(
-                        "Tap credit/debit card or phone with OMNY at all subway turnstiles. Subway runs 24/7.",
-                        "Check whether a train is Local (stops every station) or Express (skips minor stations).",
-                        "Walking is often faster than vehicle traffic in Midtown Manhattan."
+                        "OMNY contactless pay-per-ride: Simply tap debit/credit card or Apple/Google Pay at subway turnstiles.",
+                        "NYC Subway runs 24 hours a day, 7 days a week.",
+                        "Yellow Taxis can be hailed on streets or booked via the Curb app."
                 ))
                 .rideApps(Arrays.asList("Uber", "Lyft", "Curb (Yellow Cabs)"))
                 .culturalEtiquette(Arrays.asList(
-                        "Walk briskly and keep to the right on sidewalks; do not stop abruptly in pedestrian flow.",
-                        "Stand to the right on escalators.",
-                        "Tipping is customary: 18% to 20% at restaurants, 10-15% for taxi drivers."
+                        "Walk on the right side of sidewalks; step to the side if checking your phone to let fast-walking locals pass.",
+                        "Stand on the right on subway escalators."
                 ))
-                .tapWaterStatus("Safe to drink: NYC tap water from the Catskill reservoirs is world renowned for purity.")
-                .tippingCulture("18% to 20% in sit-down restaurants and bars.")
+                .tapWaterStatus("Safe to drink: NYC tap water from the Catskill watershed is world-renowned for exceptional quality.")
+                .tippingCulture("18% to 22% is standard in sit-down dining and taxis.")
                 .commonPhrases(nycPhrases)
-                .mustTryDishes(Arrays.asList("Classic New York Thin Crust Pizza slice", "Pastrami on Rye from Katz's Delicatessen", "Toasted Bagel with Cream Cheese & Lox", "Junior's Cheesecake"))
+                .mustTryDishes(Arrays.asList("Classic NY Style Pizza Slice", "Pastrami on Rye at Katz's Delicatessen", "NY Bagel with lox and schmear"))
                 .build());
     }
 
-    private CityGuide getDefaultGuide(String city) {
-        Map<String, String> defaultEmergency = new LinkedHashMap<>();
-        defaultEmergency.put("Universal Emergency", "112 / 911");
-        defaultEmergency.put("Local Tourist Assistance", "Inquire at hotel reception or dial 112");
+    private CityGuide getDefaultGuide(String destination) {
+        Map<String, String> emergency = new LinkedHashMap<>();
+        emergency.put("General Emergency", "112 / 911");
+        emergency.put("Tourist Police / Embassy Info", "Consult local embassy helpline");
 
-        Map<String, String> defaultPhrases = new LinkedHashMap<>();
-        defaultPhrases.put("Hello", "Hello / Good day");
-        defaultPhrases.put("Thank you", "Thank you very much");
-        defaultPhrases.put("How much is this?", "How much does this cost?");
+        Map<String, String> phrases = new LinkedHashMap<>();
+        phrases.put("Hello", "Hello");
+        phrases.put("Thank you", "Thank you");
+        phrases.put("Please", "Please");
+        phrases.put("Where is the hospital?", "Where is the nearest medical center?");
 
         return CityGuide.builder()
-                .city(city)
+                .city(destination)
                 .country("Global Destination")
-                .generalSummary("Welcome to " + city + "! Keep digital copies of your passport, booking vouchers, and tickets readily accessible.")
-                .knowledgeSource("International Travel Directory & Municipal Tourist Guidelines")
-                .bestTimeToVisit("Check local seasonal forecasts before departure")
-                .voltageAndSocket("Verify local voltage (typically 110V-240V). Pack a universal multi-socket adapter.")
-                .emergencyContacts(defaultEmergency)
+                .generalSummary("International travel intelligence for " + destination + ". Verified packing, transport, and cultural advisory.")
+                .knowledgeSource("World Tourism Organization & International Travel Consular Network")
+                .bestTimeToVisit("Spring and Autumn months for optimal weather and sightseeing conditions.")
+                .voltageAndSocket("Check local standards (220-240V or 110-120V). Universal adapter recommended.")
+                .emergencyContacts(emergency)
                 .transportAdvice(Arrays.asList(
-                        "Download offline maps (Google Maps / Citymapper) before heading out from Wi-Fi.",
-                        "Identify the central railway terminal or airport transit connection upon arrival.",
-                        "Prefer licensed metered taxis or verified ride-hailing apps over street touts."
+                        "Use licensed public transportation, official airport taxis, or app-based ride-hailing services.",
+                        "Keep digital backups of passport, visa, and insurance stored offline."
                 ))
-                .rideApps(Arrays.asList("Uber", "Local Ride App", "Official Airport Taxi Desk"))
+                .rideApps(Arrays.asList("Uber", "Bolt", "Local Taxi Services"))
                 .culturalEtiquette(Arrays.asList(
-                        "Observe local clothing customs at monuments and shrines (modest attire covering shoulders and knees is universally safe).",
-                        "Learn the basic local greeting for courteous interactions with shopkeepers.",
-                        "Split cash and cards between your main luggage and personal daypack."
+                        "Respect local customs and religious practices.",
+                        "Keep emergency contacts and hotel address written down."
                 ))
-                .tapWaterStatus("When in doubt, purchase sealed bottled water with unbroken caps or use hotel filtration dispensers.")
-                .tippingCulture("Typically 7% to 10% in sit-down dining unless service charge is included.")
-                .commonPhrases(defaultPhrases)
-                .mustTryDishes(Arrays.asList("Explore local food markets and dining spots with high local customer turnover"))
+                .tapWaterStatus("Drink sealed bottled water when uncertain of local municipal infrastructure.")
+                .tippingCulture("10% standard unless service charge is included.")
+                .commonPhrases(phrases)
+                .mustTryDishes(Arrays.asList("Local regional specialties", "Traditional neighborhood cuisine"))
                 .build();
     }
 }

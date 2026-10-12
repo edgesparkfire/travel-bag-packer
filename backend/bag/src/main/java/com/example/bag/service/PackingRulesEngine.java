@@ -16,9 +16,16 @@ public class PackingRulesEngine {
     public List<Item> generatePackingList(Trip trip, WeatherForecast forecast) {
         List<Item> packingList = new ArrayList<>();
         int duration = calculateDurationDays(trip);
+
         String dest = (trip.getDestination() != null) ? trip.getDestination().toLowerCase() : "";
         if (trip.getDestinationCity() != null) dest += " " + trip.getDestinationCity().toLowerCase();
-        boolean isIndia = dest.contains("india") || dest.contains("hyderabad") || dest.contains("mumbai") || dest.contains("delhi") || dest.contains("bengaluru") || dest.contains("jaipur") || dest.contains("goa");
+        String destCountry = (trip.getDestinationCountry() != null) ? trip.getDestinationCountry().toLowerCase() : "";
+
+        boolean isPakistan = destCountry.contains("pakistan") || dest.contains("pakistan");
+        boolean isIndia = !isPakistan && (destCountry.contains("india") || dest.contains("india") || 
+                dest.contains("mumbai") || dest.contains("delhi") || 
+                dest.contains("bengaluru") || dest.contains("jaipur") || dest.contains("goa") ||
+                (dest.contains("hyderabad") && !dest.contains("pakistan")));
 
         String budgetTier = (trip.getBudgetTier() != null) ? trip.getBudgetTier().toUpperCase() : "BALANCED";
 
@@ -40,7 +47,10 @@ public class PackingRulesEngine {
             packingList.add(createItem("Premium Noise-Cancelling Headphones", 1, "Electronics", "Uninterrupted quiet in lounges and transit"));
         } else {
             // BALANCED STANDARD
-            if (isIndia) {
+            if (isPakistan) {
+                packingList.add(createItem("Modest Breathable Cotton Shirts & Trousers / Kurta", duration, "Clothing", "Modest loose cotton clothing suitable for warm dry climate"));
+                packingList.add(createItem("Versatile Casual Trousers / Chinos", Math.max(2, (duration / 2) + 1), "Clothing", "Comfortable modest bottoms for bazaar visits"));
+            } else if (isIndia) {
                 packingList.add(createItem("Lightweight Breathable Cotton Tops / Shirts", duration, "Clothing", "1 daily change in breathable 100% cotton for tropical climate"));
                 packingList.add(createItem("Loose Cotton Trousers / Linen Pants", Math.max(2, (duration / 2) + 1), "Clothing", "Modest coverage for street and temple visits"));
             } else {
@@ -53,8 +63,11 @@ public class PackingRulesEngine {
             }
         }
 
-        // Shared clothing items
-        if (isIndia) {
+        // Cultural & Etiquette Footwear / Coverings
+        if (isPakistan) {
+            packingList.add(createItem("Light Scarf / Dupatta / Shawl (Head & Shoulder Cover)", 1, "Clothing", "Mandatory etiquette for mosques, shrines, and traditional bazaars"));
+            packingList.add(createItem("Slip-On Shoes / Loafers", 1, "Clothing", "Easily removed before entering shrines and carpeted heritage sites"));
+        } else if (isIndia) {
             packingList.add(createItem("Light Scarf / Shawl (Head & Shoulder Cover)", 1, "Clothing", "Mandatory etiquette for temples, gurdwaras, and mosques"));
             packingList.add(createItem("Easy Slip-On Walking Shoes / Loafers", 1, "Clothing", "Footwear is removed frequently at temples and heritage sites"));
         } else {
@@ -72,7 +85,11 @@ public class PackingRulesEngine {
         packingList.add(createItem("Deodorant & Fragrance", 1, "Essentials", "All-day freshness"));
         packingList.add(createItem("Mini First-Aid Kit & Pain Reliever", 1, "Essentials", "Band-aids, headache and stomach relief"));
 
-        if (isIndia) {
+        if (isPakistan) {
+            packingList.add(createItem("Pocket Hand Sanitizer & Antiseptic Wet Wipes", 2, "Essentials", "Hand hygiene before meals and after transit"));
+            packingList.add(createItem("Electrolyte Hydration Sachets (ORS)", 4, "Essentials", "Rapid rehydration in warm dry climate"));
+            packingList.add(createItem("Mosquito Repellent Cream (Mospel)", 1, "Essentials", "Protection during evening sightseeing"));
+        } else if (isIndia) {
             packingList.add(createItem("Mosquito Repellent Lotion (Odomos / DEET)", 1, "Essentials", "Protection during evening sightseeing"));
             packingList.add(createItem("Electrolyte Hydration Sachets (ORS)", 4, "Essentials", "Rapid rehydration in warm climate"));
             packingList.add(createItem("Pocket Hand Sanitizer & Antiseptic Wet Wipes", 2, "Essentials", "Indispensable before meals and transit"));
@@ -80,7 +97,9 @@ public class PackingRulesEngine {
 
         // 3. ELECTRONICS & POWER
         packingList.add(createItem("Phone Charger & High-Capacity Power Bank", 1, "Electronics", "Keep devices running while navigating (carry in cabin bag)"));
-        if (isIndia) {
+        if (isPakistan) {
+            packingList.add(createItem("Universal Type C / D Travel Adapter (230V 50Hz)", 1, "Electronics", "Ensure grounded socket compatibility in Pakistan"));
+        } else if (isIndia) {
             packingList.add(createItem("Type D / M Universal Travel Adapter (230V 3-Pin)", 1, "Electronics", "Ensure grounded socket compatibility for India"));
         } else {
             packingList.add(createItem("Universal Multi-Country Power Adapter", 1, "Electronics", "Ensure socket compatibility"));
@@ -92,8 +111,8 @@ public class PackingRulesEngine {
         if (transport.contains("TRAIN")) {
             packingList.add(createItem("Ergonomic Travel Neck Pillow", 1, "Transport Gear", "Comfortable sleep in train coach"));
             packingList.add(createItem("Light AC Blanket / Travel Shawl", 1, "Transport Gear", "AC coaches often become chilly"));
-            packingList.add(createItem("Offline Railway e-Ticket PDF & Photo ID", 1, "Transport Gear", "Quick verification by ticket examiner (TTE)"));
-            if (isIndia) {
+            packingList.add(createItem("Offline Railway e-Ticket PDF & Photo ID", 1, "Transport Gear", "Quick verification by ticket examiner"));
+            if (isIndia || isPakistan) {
                 packingList.add(createItem("Wire Luggage Lock & Chain", 1, "Transport Gear", "Secure suitcase under berth for overnight trains"));
             }
         } else if (transport.contains("FLIGHT") || transport.contains("AIR")) {

@@ -52,9 +52,14 @@ public class TripController {
 
     @PostMapping
     public ResponseEntity<Trip> createTrip(@RequestBody Trip trip) {
-        String cityForWeather = (trip.getDestinationCity() != null && !trip.getDestinationCity().trim().isEmpty())
-                ? trip.getDestinationCity()
-                : trip.getDestination();
+        String cityForWeather;
+        if (trip.getDestination() != null && !trip.getDestination().trim().isEmpty()) {
+            cityForWeather = trip.getDestination();
+        } else {
+            String destCity = (trip.getDestinationCity() != null ? trip.getDestinationCity() : "");
+            String destCountry = (trip.getDestinationCountry() != null ? trip.getDestinationCountry() : "");
+            cityForWeather = (!destCountry.isEmpty()) ? (destCity + ", " + destCountry) : destCity;
+        }
 
         WeatherForecast forecast = weatherService.getForecast(cityForWeather);
         if (forecast != null) {
@@ -72,12 +77,16 @@ public class TripController {
 
         List<ChatMessage> chat = new ArrayList<>();
         String timeNow = LocalDateTime.now().format(DateTimeFormatter.ofPattern("hh:mm a"));
-        String destDisplay = (trip.getDestinationCity() != null ? trip.getDestinationCity() : trip.getDestination());
-        String originDisplay = (trip.getOriginCity() != null ? trip.getOriginCity() : "your departure city");
+        String destDisplay = (trip.getDestination() != null && !trip.getDestination().trim().isEmpty())
+                ? trip.getDestination()
+                : (trip.getDestinationCity() != null ? trip.getDestinationCity() : "your destination");
+        String originDisplay = (trip.getOriginCity() != null && !trip.getOriginCity().trim().isEmpty())
+                ? trip.getOriginCity()
+                : "your departure location";
 
         String welcomeMsg = "Welcome to your journey from " + originDisplay + " to " + destDisplay + "! " +
                 "I have organized your clothing, essentials, and transport equipment. " +
-                "Feel free to ask me anything about local cultural etiquette, train standards, voltages, or packing hacks!";
+                "Feel free to ask me anything about local cultural etiquette, transit guidelines, power sockets, or packing hacks!";
 
         chat.add(ChatMessage.builder()
                 .sender("gemini")
@@ -88,133 +97,112 @@ public class TripController {
         trip.setAiChatHistory(chat);
 
         Trip savedTrip = tripRepository.save(trip);
-        return ResponseEntity.status(HttpStatus.CREATED).body(savedTrip);
+        return new ResponseEntity<>(savedTrip, HttpStatus.CREATED);
     }
 
-    // PATCH /api/trips/{id}/tier - Recalculate packing list by budget tier
     @PatchMapping("/{id}/tier")
-    public ResponseEntity<Trip> changeBudgetTier(
-            @PathVariable String id,
-            @RequestBody Map<String, String> request) {
-        Optional<Trip> optionalTrip = tripRepository.findById(id);
-        if (optionalTrip.isEmpty()) {
-            return ResponseEntity.notFound().build();
+    public ResponseEntity<Trip> changeBudgetTier(@PathVariable String id, @RequestBody Map<String, String> payload) {
+        String newTier = payload.get("budgetTier");
+        if (newTier == null || newTier.trim().isEmpty()) {
+            return ResponseEntity.badRequest().build();
         }
 
-        Trip trip = optionalTrip.get();
-        String tier = request.getOrDefault("budgetTier", "BALANCED").toUpperCase();
-        trip.setBudgetTier(tier);
+        return tripRepository.findById(id).map(trip -> {
+            trip.setBudgetTier(newTier.toUpperCase());
+            String cityForWeather = (trip.getDestination() != null && !trip.getDestination().trim().isEmpty())
+                    ? trip.getDestination()
+                    : trip.getDestinationCity();
+            WeatherForecast forecast = weatherService.getForecast(cityForWeather);
+            List<Item> regeneratedList = packingRulesEngine.generatePackingList(trip, forecast);
 
-        String cityForWeather = (trip.getDestinationCity() != null && !trip.getDestinationCity().trim().isEmpty())
-                ? trip.getDestinationCity()
-                : trip.getDestination();
+            // Preserve already packed items if names match
+            Map<String, Boolean> previousPacked = new HashMap<>();
+            if (trip.getPackingList() != null) {
+                for (Item it : trip.getPackingList()) {
+                    if (it.getIsPacked() != null && it.getIsPacked()) {
+                        previousPacked.put(it.getItemName().toLowerCase(), true);
+                    }
+                }
+            }
 
-        WeatherForecast forecast = weatherService.getForecast(cityForWeather);
-        List<Item> newPackingList = packingRulesEngine.generatePackingList(trip, forecast);
-        trip.setPackingList(newPackingList);
+            for (Item newItem : regeneratedList) {
+                if (previousPacked.containsKey(newItem.getItemName().toLowerCase())) {
+                    newItem.setIsPacked(true);
+                }
+            }
 
-        Trip updatedTrip = tripRepository.save(trip);
-        return ResponseEntity.ok(updatedTrip);
-    }
-
-    @PostMapping("/{id}/chat")
-    public ResponseEntity<Map<String, Object>> chatWithGemini(
-            @PathVariable String id,
-            @RequestBody Map<String, String> request) {
-        Optional<Trip> optionalTrip = tripRepository.findById(id);
-        if (optionalTrip.isEmpty()) {
-            return ResponseEntity.notFound().build();
-        }
-
-        Trip trip = optionalTrip.get();
-        String userMessage = request.getOrDefault("message", "").trim();
-        if (userMessage.isEmpty()) {
-            return ResponseEntity.badRequest().body(Map.of("error", "Message cannot be empty"));
-        }
-
-        String timeNow = LocalDateTime.now().format(DateTimeFormatter.ofPattern("hh:mm a"));
-
-        if (trip.getAiChatHistory() == null) {
-            trip.setAiChatHistory(new ArrayList<>());
-        }
-
-        trip.getAiChatHistory().add(ChatMessage.builder()
-                .sender("user")
-                .text(userMessage)
-                .timestamp(timeNow)
-                .build());
-
-        String aiReply = geminiAiService.generateChatAnswer(trip, userMessage);
-
-        trip.getAiChatHistory().add(ChatMessage.builder()
-                .sender("gemini")
-                .text(aiReply)
-                .timestamp(timeNow)
-                .build());
-
-        Trip updatedTrip = tripRepository.save(trip);
-
-        Map<String, Object> response = new LinkedHashMap<>();
-        response.put("reply", aiReply);
-        response.put("chatHistory", updatedTrip.getAiChatHistory());
-        response.put("tripId", id);
-
-        return ResponseEntity.ok(response);
-    }
-
-    @PatchMapping("/{id}/complete")
-    public ResponseEntity<Trip> toggleTripCompleted(
-            @PathVariable String id,
-            @RequestBody(required = false) Map<String, Object> body) {
-        Optional<Trip> optionalTrip = tripRepository.findById(id);
-        if (optionalTrip.isEmpty()) {
-            return ResponseEntity.notFound().build();
-        }
-
-        Trip trip = optionalTrip.get();
-        if (body != null && body.containsKey("isCompleted")) {
-            trip.setIsCompleted(Boolean.valueOf(String.valueOf(body.get("isCompleted"))));
-        } else {
-            trip.setIsCompleted(!Boolean.TRUE.equals(trip.getIsCompleted()));
-        }
-
-        Trip updatedTrip = tripRepository.save(trip);
-        return ResponseEntity.ok(updatedTrip);
+            trip.setPackingList(regeneratedList);
+            Trip updated = tripRepository.save(trip);
+            return ResponseEntity.ok(updated);
+        }).orElse(ResponseEntity.notFound().build());
     }
 
     @PatchMapping("/{id}/items/{itemId}")
-    public ResponseEntity<Trip> togglePackedStatus(
-            @PathVariable String id,
-            @PathVariable String itemId,
-            @RequestBody(required = false) Map<String, Object> body) {
-        Optional<Trip> optionalTrip = tripRepository.findById(id);
-        if (optionalTrip.isEmpty()) {
-            return ResponseEntity.notFound().build();
-        }
+    public ResponseEntity<Trip> toggleItemPacked(@PathVariable String id,
+                                                 @PathVariable String itemId,
+                                                 @RequestBody(required = false) Map<String, Boolean> payload) {
+        return tripRepository.findById(id).map(trip -> {
+            Boolean newStatus = null;
+            if (payload != null && payload.containsKey("isPacked")) {
+                newStatus = payload.get("isPacked");
+            }
 
-        Trip trip = optionalTrip.get();
-        boolean itemFound = false;
-
-        if (trip.getPackingList() != null) {
-            for (Item item : trip.getPackingList()) {
-                if (itemId.equals(item.getItemId())) {
-                    itemFound = true;
-                    if (body != null && body.containsKey("isPacked")) {
-                        item.setIsPacked(Boolean.valueOf(String.valueOf(body.get("isPacked"))));
-                    } else {
-                        item.setIsPacked(!Boolean.TRUE.equals(item.getIsPacked()));
+            if (trip.getPackingList() != null) {
+                for (Item item : trip.getPackingList()) {
+                    if (item.getItemId().equals(itemId)) {
+                        item.setIsPacked(newStatus != null ? newStatus : !Boolean.TRUE.equals(item.getIsPacked()));
+                        break;
                     }
-                    break;
                 }
             }
+            Trip updated = tripRepository.save(trip);
+            return ResponseEntity.ok(updated);
+        }).orElse(ResponseEntity.notFound().build());
+    }
+
+    @PatchMapping("/{id}/complete")
+    public ResponseEntity<Trip> toggleTripCompleted(@PathVariable String id,
+                                                    @RequestBody(required = false) Map<String, Boolean> payload) {
+        return tripRepository.findById(id).map(trip -> {
+            Boolean newStatus = null;
+            if (payload != null && payload.containsKey("isCompleted")) {
+                newStatus = payload.get("isCompleted");
+            }
+            trip.setIsCompleted(newStatus != null ? newStatus : !Boolean.TRUE.equals(trip.getIsCompleted()));
+            Trip updated = tripRepository.save(trip);
+            return ResponseEntity.ok(updated);
+        }).orElse(ResponseEntity.notFound().build());
+    }
+
+    @PostMapping("/{id}/chat")
+    public ResponseEntity<Trip> chatWithGemini(@PathVariable String id, @RequestBody Map<String, String> payload) {
+        String userMessage = payload.get("message");
+        if (userMessage == null || userMessage.trim().isEmpty()) {
+            return ResponseEntity.badRequest().build();
         }
 
-        if (!itemFound) {
-            return ResponseEntity.notFound().build();
-        }
+        return tripRepository.findById(id).map(trip -> {
+            String timeNow = LocalDateTime.now().format(DateTimeFormatter.ofPattern("hh:mm a"));
+            if (trip.getAiChatHistory() == null) {
+                trip.setAiChatHistory(new ArrayList<>());
+            }
 
-        Trip updatedTrip = tripRepository.save(trip);
-        return ResponseEntity.ok(updatedTrip);
+            trip.getAiChatHistory().add(ChatMessage.builder()
+                    .sender("user")
+                    .text(userMessage)
+                    .timestamp(timeNow)
+                    .build());
+
+            String aiResponse = geminiAiService.generateChatAnswer(trip, userMessage);
+            trip.getAiChatHistory().add(ChatMessage.builder()
+                    .sender("gemini")
+                    .text(aiResponse)
+                    .timestamp(timeNow)
+                    .build());
+
+            Trip updated = tripRepository.save(trip);
+            return ResponseEntity.ok(updated);
+        }).orElse(ResponseEntity.notFound().build());
     }
 
     @DeleteMapping("/{id}")

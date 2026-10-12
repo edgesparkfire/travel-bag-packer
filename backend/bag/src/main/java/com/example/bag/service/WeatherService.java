@@ -29,7 +29,11 @@ public class WeatherService {
             return getDefaultForecast("Your Destination");
         }
 
-        String cleanDest = destination.trim().split(",")[0].trim().replace(" ", "+");
+        // Clean destination for wttr.in preserving country/state (e.g. Hyderabad+Pakistan)
+        String cleanDest = destination.trim()
+                .replace(", ", "+")
+                .replace(",", "+")
+                .replace(" ", "+");
         String url = "https://wttr.in/" + cleanDest + "?format=j1";
 
         try {
@@ -53,10 +57,10 @@ public class WeatherService {
                             conditionDesc.toLowerCase().contains("shower");
 
                     return WeatherForecast.builder()
-                            .destination(destination)
                             .temperature(temp)
                             .condition(conditionDesc)
-                            .isRain(isRain)
+                            .rain(isRain)
+                            .description(destination + ": " + conditionDesc + " (" + temp + "°C)")
                             .build();
                 }
             }
@@ -73,13 +77,33 @@ public class WeatherService {
         String condition = "Pleasant & Clear";
         boolean isRain = false;
 
-        if (lower.contains("london") || lower.contains("paris") || lower.contains("uk")) {
+        if (lower.contains("london") || lower.contains("uk") || lower.contains("united kingdom")) {
             temp = 14.0;
             condition = "Overcast & Cool";
             isRain = true;
-        } else if (lower.contains("hyderabad") || lower.contains("mumbai") || lower.contains("delhi") || lower.contains("india")) {
+        } else if (lower.contains("paris") || lower.contains("france")) {
+            temp = 16.0;
+            condition = "Mild & Breezy";
+            isRain = false;
+        } else if (lower.contains("pakistan")) {
+            temp = 31.0;
+            condition = "Warm & Sunny";
+            isRain = false;
+        } else if (lower.contains("hyderabad") && lower.contains("india")) {
+            temp = 28.0;
+            condition = "Warm & Clear";
+            isRain = false;
+        } else if (lower.contains("hyderabad") && !lower.contains("pakistan")) {
+            temp = 28.0;
+            condition = "Warm & Clear";
+            isRain = false;
+        } else if (lower.contains("india") || lower.contains("mumbai") || lower.contains("delhi")) {
             temp = 28.0;
             condition = "Warm & Sunny";
+            isRain = false;
+        } else if (lower.contains("dubai") || lower.contains("uae") || lower.contains("emirates")) {
+            temp = 34.0;
+            condition = "Hot & Arid";
             isRain = false;
         } else if (lower.contains("tokyo") || lower.contains("japan")) {
             temp = 18.0;
@@ -88,10 +112,10 @@ public class WeatherService {
         }
 
         return WeatherForecast.builder()
-                .destination(destination)
                 .temperature(temp)
                 .condition(condition)
-                .isRain(isRain)
+                .rain(isRain)
+                .description(destination + ": " + condition + " (" + temp + "°C)")
                 .build();
     }
 }
