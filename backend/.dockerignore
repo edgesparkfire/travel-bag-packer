@@ -1,0 +1,7 @@
+bag/target/
+!.mvn/wrapper/maven-wrapper.jar
+**/.git
+**/.gitignore
+**/.vscode
+**/.idea
+*.cmd

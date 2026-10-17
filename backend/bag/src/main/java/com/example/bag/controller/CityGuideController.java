@@ -8,7 +8,7 @@ import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/city-guide")
-@CrossOrigin(origins = "*", allowedHeaders = "*", methods = {RequestMethod.GET, RequestMethod.OPTIONS})
+@CrossOrigin(originPatterns = {"https://*.onrender.com*", "https://*.vercel.app*", "http://localhost:*", "http://127.0.0.1:*"}, allowedHeaders = "*", methods = {RequestMethod.GET, RequestMethod.OPTIONS})
 public class CityGuideController {
 
     private final CityGuideService cityGuideService;

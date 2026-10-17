@@ -9,7 +9,7 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/api/ai")
-@CrossOrigin(origins = "*", allowedHeaders = "*", methods = {RequestMethod.POST, RequestMethod.GET, RequestMethod.OPTIONS})
+@CrossOrigin(originPatterns = {"https://*.onrender.com*", "https://*.vercel.app*", "http://localhost:*", "http://127.0.0.1:*"}, allowedHeaders = "*", methods = {RequestMethod.POST, RequestMethod.GET, RequestMethod.OPTIONS})
 public class AiAdvisorController {
 
     private final GeminiAiService geminiAiService;

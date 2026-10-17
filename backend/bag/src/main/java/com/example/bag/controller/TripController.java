@@ -19,7 +19,7 @@ import java.util.*;
 
 @RestController
 @RequestMapping("/api/trips")
-@CrossOrigin(origins = "*", allowedHeaders = "*", methods = {RequestMethod.GET, RequestMethod.POST, RequestMethod.PATCH, RequestMethod.DELETE, RequestMethod.OPTIONS})
+@CrossOrigin(originPatterns = {"https://*.onrender.com*", "https://*.vercel.app*", "http://localhost:*", "http://127.0.0.1:*"}, allowedHeaders = "*", methods = {RequestMethod.GET, RequestMethod.POST, RequestMethod.PATCH, RequestMethod.DELETE, RequestMethod.OPTIONS})
 public class TripController {
 
     private final TripRepository tripRepository;
@@ -95,6 +95,10 @@ public class TripController {
                 .build());
 
         trip.setAiChatHistory(chat);
+
+        if (trip.getId() == null || trip.getId().trim().isEmpty()) {
+            trip.setId(UUID.randomUUID().toString());
+        }
 
         Trip savedTrip = tripRepository.save(trip);
         return new ResponseEntity<>(savedTrip, HttpStatus.CREATED);
