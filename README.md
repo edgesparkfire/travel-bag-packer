@@ -1,80 +1,53 @@
-﻿# Travel Bag Packer (Fullstack Application)
+﻿# 🧳 Travel Bag Packer — Fullstack Application
 
-Production-ready repository configured for deployment on **Render** (PostgreSQL + Docker Spring Boot Web Service + Vite Static Site).
+> **Smart packing assistant with automated checklists, weather integration, and AI travel guidance.**
+
+### 🔗 Live Production Links
+- 🌐 **Live Web Application (Frontend)**: [https://travel-bag-frontend.onrender.com](https://travel-bag-frontend.onrender.com)
+- ⚙️ **Live Backend API**: [https://travel-bag-packer.onrender.com](https://travel-bag-packer.onrender.com)
+- 🏥 **API Health Check**: [https://travel-bag-packer.onrender.com/api/health](https://travel-bag-packer.onrender.com/api/health)
+- 📦 **Frontend GitHub Repository**: [https://github.com/edgesparkfire/travel-bag-packer-frontend](https://github.com/edgesparkfire/travel-bag-packer-frontend)
 
 ---
 
 ## 🏛️ Architecture Overview
-
 - **Frontend**: React 19 + Vite SPA (Hosted as a **Render Static Site**)
-- **Backend**: Spring Boot 4 / Java 21 (Hosted as a **Render Web Service** via Docker)
-- **Database**: PostgreSQL (Managed **Render Database** `travel-bag-db`)
+- **Backend**: Spring Boot 4 / Java 21 (Hosted as a **Render Web Service** via Docker container)
+- **Database**: PostgreSQL (Managed **Render Database** `travel-bag-packer_Database`)
 - **Health Check**: `/api/health`
 
 ---
 
-## 🚀 Step-by-Step Render Deployment Guide
+## 🌐 API Endpoints
 
-### Step 1: Deploy Backend & Database
+Base URL: `https://travel-bag-packer.onrender.com`
 
-#### Option A: 1-Click via Render Blueprint (Recommended)
-1. In the [Render Dashboard](https://dashboard.render.com), click **New +** > **Blueprint**.
-2. Connect the backend repository: `https://github.com/edgesparkfire/travel-bag-packer`.
-3. Render reads `render.yaml` and will automatically configure:
-   - **Database**: `travel-bag-db` (PostgreSQL)
-   - **Web Service**: `travel-bag-backend` (Docker multi-stage build, Java 21)
-   - **Environment Variables**: `PORT=8080`, `DATABASE_URL` linked from the database, `FRONTEND_URL`.
-4. Click **Apply**.
-5. Once deployed, copy your backend URL: e.g. `https://travel-bag-backend.onrender.com`.
-
-#### Option B: Manual Setup on Render
-1. **Create PostgreSQL Database**:
-   - Click **New +** > **PostgreSQL**.
-   - Name: `travel-bag-db`
-   - Database: `travel_bag_db`
-   - User: `bag_user`
-   - Plan: **Free**
-   - Click **Create Database**.
-   - Copy the **Internal Database URL**.
-2. **Create Web Service**:
-   - Click **New +** > **Web Service**.
-   - Connect repository `travel-bag-packer`.
-   - Runtime: **Docker** (Root directory: `.`, Dockerfile path: `./Dockerfile`).
-   - Health Check Path: `/api/health`
-   - Environment Variables:
-     - `DATABASE_URL`: *(Paste the Internal Database URL from step 1)*
-     - `PORT`: `8080`
-     - `FRONTEND_URL`: `https://<your-frontend-subdomain>.onrender.com`
-   - Click **Create Web Service**.
-
----
-
-### Step 2: Deploy Frontend
-
-1. In the [Render Dashboard](https://dashboard.render.com), click **New +** > **Static Site**.
-2. Connect your frontend repository: `https://github.com/edgesparkfire/travel-bag-packer-frontend`.
-3. Fill in the settings:
-   - **Name**: `travel-bag-frontend`
-   - **Branch**: `main`
-   - **Build Command**: `npm install && npm run build`
-   - **Publish Directory**: `dist`
-4. Under **Environment Variables**:
-   - `VITE_API_BASE_URL`: `https://travel-bag-backend.onrender.com` *(use your actual backend URL from Step 1)*
-5. Click **Create Static Site**.
-*(SPA routing rewrites are automatically handled by `public/_redirects` which is bundled into `dist/_redirects`).*
+| Method | Endpoint | Description |
+|---|---|---|
+| `GET` | `/api/health` | Service uptime and health check |
+| `GET` | `/api/trips` | Retrieve all trips |
+| `GET` | `/api/trips/{id}` | Get specific trip details |
+| `POST` | `/api/trips` | Create trip with auto-generated packing list & AI welcome |
+| `PATCH` | `/api/trips/{id}/tier` | Update budget tier (`BUDGET`, `BALANCED`, `LUXURY`) |
+| `PATCH` | `/api/trips/{id}/items/{itemId}` | Toggle packed item status |
+| `PATCH` | `/api/trips/{id}/complete` | Toggle trip completion status |
+| `POST` | `/api/trips/{id}/chat` | Ask Gemini Travel Advisor contextual question |
+| `DELETE` | `/api/trips/{id}` | Delete a trip |
+| `GET` | `/api/city-guide?city={name}` | Get curated cultural & city guide |
+| `POST` | `/api/ai/tips` | Standalone AI travel recommendations |
 
 ---
 
 ## 💻 Local Development
 
-### Run Backend
+### Backend
 ```bash
 cd backend/bag
 ./mvnw spring-boot:run
 ```
-*(If no PostgreSQL DATABASE_URL is set, it automatically runs an in-memory H2 database).*
+*(If no PostgreSQL DATABASE_URL is set, it automatically falls back to an in-memory H2 database).*
 
-### Run Frontend
+### Frontend
 ```bash
 cd frontend
 npm install
